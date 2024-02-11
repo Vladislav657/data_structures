@@ -30,18 +30,45 @@ public:
 
     void print() const{
         printf("%lf", this->real);
-        if (this->img < 0) printf(" - %lfi", -this->img);
-        else printf(" + %lfi", this->img);
+        if (this->img < 0) printf(" - %lfi\n", -this->img);
+        else printf(" + %lfi\n", this->img);
     }
 };
 
 
 int main(){
-    Complex a = Complex(4, 8);
-    Complex b = Complex(7, -6);
-    Complex d = Complex(2, 2);
-    Complex c = a + b * d;
+    using namespace std;
 
+    printf("input complex number a: \n     real part: ");
+    double real; cin >> real;
+    printf("    imagine part: ");
+    double img; cin >> img;
+
+    Complex a = Complex(real, img);
+
+    printf("\ninput complex number b: \n     real part: ");
+    cin >> real;
+    printf("    imagine part: ");
+    cin >> img;
+
+    Complex b = Complex(real, img);
+
+    Complex c = a + b;
+
+    cout << "\n'+': ";
     c.print();
+
+    c = a - b;
+    cout << "\n'-': ";
+    c.print();
+
+    c = a * b;
+    cout << "\n'*': ";
+    c.print();
+
+    c = a / b;
+    cout << "\n'/': ";
+    c.print();
+
     return 0;
 }
