@@ -6,7 +6,7 @@ public:
     double real;
     double img;
 
-    Complex(double real, double img){
+    Complex(double real = 0, double img = 0){
         this->real = real;
         this->img = img;
     }
@@ -23,9 +23,17 @@ public:
         return {this->real * a.real - this->img * a.img, this->real * a.img + this->img * a.real};
     }
 
+    Complex sopr() {
+        return {this->real, -this->img};
+    }
+
+    Complex operator / (double d) const{
+        return {this->real / d, this->img / d};
+    }
+
     Complex operator / (Complex a) const{
-        return {(this->real * a.real + this->img * a.img) / (a.real * a.real + a.img * a.img),
-                (a.real * this->img - this->real * a.img) / (a.real * a.real + a.img * a.img)};
+        double d = a.real * a.real + a.img * a.img;
+        return {(*this * a.sopr()) / d};
     }
 
     void print() const{
