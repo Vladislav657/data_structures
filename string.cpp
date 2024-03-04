@@ -24,25 +24,18 @@ private:
     int length;
 
 public:
-    String(){ // создать
+    String(){
         head = tail = nullptr;
         length = 0;
     }
 
-    void pushFront(char ch){ // добавить символ с начала
-        Node *node = new Node(ch);
-        if (length == 0){
-            head = tail = node;
-            length++;
-            return;
-        }
-        head->prev = node;
-        node->next = head;
-        head = node;
-        length++;
+    String(string& start_str){ // создать с начальной строкой
+        head = tail = nullptr;
+        length = 0;
+        for (int i = 0; i < start_str.length(); ++i) this->push(start_str[i]);
     }
 
-    void pushBack(char ch){ // добавить символ с конца
+    void push(char ch){ // добавить символ в конец
         Node *node = new Node(ch);
         if (length == 0){
             tail = head = node;
@@ -55,74 +48,44 @@ public:
         length++;
     }
 
-    void insert(char ch, int index){ // добавить символ по индексу
-        if (index < 0 || index > length) return;
-        if (index == 0){
-            pushFront(ch);
-            return;
+    void insert(int index, String &str){ // вставить строку по индексу
+        if (index < 0 || index > length || str.head == nullptr) return;
+        if (this->head == nullptr){
+            this->head = str.head;
+            this->tail = str.tail;
+        } else if (index == 0){
+            str.tail->next = this->head;
+            this->head->prev = str.tail;
+            this->head = str.head;
+        } else if (index == length){
+            str.head->prev = this->tail;
+            this->tail->next = str.head;
+            this->tail = str.tail;
+        } else {
+            Node *node = get(index);
+            node->prev->next = str.head;
+            str.head->prev = node->prev;
+            node->prev = str.tail;
+            str.tail->next = node;
         }
-        if (index == length){
-            pushBack(ch);
-            return;
-        }
-        Node *node = new Node(ch);
-        Node *current = head;
-        for (int i = 1; i < length; ++i) {
-            current = current->next;
-            if (i == index) break;
-        }
-        current->prev->next = node;
-        node->prev = current->prev;
-        current->prev = node;
-        node->next = current;
-        length++;
+        this->length += str.length;
     }
 
-    Node *popFront(){ // удалить символ с начала
-        Node *node = head;
-        if (length == 0) return node;
-        if (length == 1){
-            head = tail = nullptr;
-            length--;
-            return node;
-        }
-        head = head->next;
-        head->prev = nullptr;
-        node->next = nullptr;
-        length--;
-        return node;
-    }
-
-    Node *popBack(){ // удалить символ с конца
-        Node *node = tail;
-        if (length == 0) return node;
-        if (length == 1){
-            tail = head = nullptr;
-            length--;
-            return node;
-        }
-        tail = tail->prev;
-        tail->next = nullptr;
-        node->prev = nullptr;
-        length--;
-        return node;
-    }
-
-    Node *remove(int index){ // удалить символ по индексу
-        Node *node = nullptr;
-        if (index < 0 || index >= length) return node;
-        if (index == 0) return popFront();
-        if (index == length - 1) return popBack();
-        node = head;
-        for (int i = 1; i < length - 1; ++i) {
-            node = node->next;
-            if (i == index) break;
-        }
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
-        node->next = node->prev = nullptr;
-        length--;
-        return node;
+    String *remove(int start, int end){ // вырезать подстроку по индексам start и end
+        if (start < 0 || start >= length || end < 0 || end >= length || start > end) return nullptr;
+        auto *removed = new String();
+        Node *left = get(start);
+        Node *right = get(end);
+        if (start == 0) this->head = right->next;
+        if (end == length - 1) this->tail = left->prev;
+        if (left->prev != nullptr) left->prev->next = right->next;
+        if (right->next != nullptr) right->next->prev = left->prev;
+        left->prev = right->next = nullptr;
+        removed->head = left;
+        removed->tail = right;
+        removed->length = end - start + 1;
+        this->length -= removed->length;
+        return removed;
     }
 
     Node *get(int index) const{ // получить символ по индексу
@@ -136,59 +99,86 @@ public:
         return node;
     }
 
-    bool isEmpty() const{ // пустая ли строка
-        return length == 0;
-    }
-
-    bool contains(string& s) const{ // содержит ли строка подстроку
-        if (s.length() > length || s.empty()) return false;
-        bool flag = false;
-        Node *start = head;
-        Node *current;
-        for (int i = 0; i < length - s.length() + 1; ++i) {
+    int find(String& s) const{ // поиск подстроки
+        if (s.len() > length || s.len() == 0) return -1;
+        bool flag;
+        Node *start = this->head;
+        Node *current, *other;
+        for (int i = 0; i < length - s.len() + 1; ++i) { // helloWorld
             flag = true;
             current = start;
-            for (int j = 0; j < s.length(); ++j) {
-                if (current->data != s[j]) {
+            other = s.head;
+            for (int j = 0; j < s.len(); ++j) {
+                if (current->data != other->data) {
                     flag = false;
                     break;
                 }
                 current = current->next;
+                other = other->next;
             }
-            if (flag) return flag;
+            if (flag) return i;
             start = start->next;
         }
-        return flag;
+        return -1;
     }
 
-    String *slice(int start, int end) const{ // срез строки
-        if (start < 0 || start >= length || end < 0 || end >= length || end <= start) return nullptr;
+    void replace(String& sub_old, String& sub_new){
+        int start = this->find(sub_old);
+        if (start == -1) return;
+        int end = start + sub_old.len() - 1;
+        this->remove(start, end);
+        this->insert(start, sub_new);
+    }
+
+    String *divide(int index){ // разделение строки
+        if (index < 0 || index >= length) return nullptr;
         auto *slice = new String();
-        Node *node = get(start);
-        for (int i = start; i <= end; ++i) {
-            slice->pushBack(node->data);
-            node = node->next;
-        }
+        Node *node = get(index);
+        slice->head = node;
+        slice->tail = this->tail;
+        this->tail = node->prev;
+        if (index == 0) this->head = node->prev;
+        if (this->tail != nullptr) this->tail->next = nullptr; // 0 1 2 3 4 5 6 7
+        slice->head->prev = nullptr;
+        slice->length = this->length - index;
+        this->length -= slice->length;
         return slice;
     }
 
-    String operator + (String& other) const{ // конкатенация строк
-        String res = String();
-        Node *node = this->head;
-        for (int i = 0; i < this->len(); ++i){
-            res.pushBack(node->data);
-            node = node->next;
-        }
-        node = other.head;
-        for (int i = 0; i < other.len(); ++i){
-            res.pushBack(node->data);
-            node = node->next;
-        }
+    String *operator + (String& other) const{ // конкатенация строк
+        String *left = this->copy();
+        String *right = other.copy();
+        auto *res = new String();
+        if (left->tail != nullptr && right->head != nullptr){
+            left->tail->next = right->head;
+            res->head = left->head;
+            res->tail = right->tail;
+        } else if (left->tail != nullptr) res = left;
+        else res = right;
+        res->length = left->length + right->length;
         return res;
     }
 
-    void operator += (string& other){ // расширение строки
-        for (int i = 0; i < other.length(); ++i) this->pushBack(other[i]);
+    void operator += (String& other){ // конкатенация строк с изменением
+        String *right = other.copy();
+        if (this->tail != nullptr && right->head != nullptr){
+            this->tail->next = right->head;
+            this->tail = right->tail;
+        } else if (right->tail != nullptr){
+            this->head = right->head;
+            this->tail = right->tail;
+        }
+        this->length += right->length;
+    }
+
+    String *copy() const{ // копия строки
+        auto *copy = new String();
+        Node *node = head;
+        for (int i = 0; i < length; ++i) {
+            copy->push(node->data);
+            node = node->next;
+        }
+        return copy;
     }
 
     int len() const{ // длина строки
@@ -210,46 +200,62 @@ public:
 void help(){
     cout << "Possible OPERATIONS:";
     cout << "\n--help (show ALL OPERATIONS)";
-    cout << "\n--insert 'num' 'char' 'index' (insert to STRING with number 'num' char 'char' to index 'index')";
-    cout << "\n--remove 'num' 'index' (remove from STRING with number 'num' char with index 'index')";
+    cout << "\n--push 'num' 'char' (push to STRING with number 'num' char 'char' at the end)";
+    cout << "\n--insert 'num' 'index' 'str'(insert to STRING with number 'num' to index 'index' string 'str')";
+    cout << "\n--remove 'num' 'start' 'end' (remove from STRING with number 'num' substring by indices)";
     cout << "\n--get 'num' 'index' (get from STRING with number 'num' char with index 'index')";
-    cout << "\n--empty 'num' (prints 'yes' if STRING with number 'num' is empty else 'no')";
-    cout << "\n--contains 'num' 'str' ('yes' if STRING with number 'num' contains STRING 'str' else 'no')";
-    cout << "\n--slice 'num' 'start' 'end' (slice of STRING with number 'num' from 'start' to 'end')";
-    cout << "\n--concat 'num1' 'num2' (concatenate STRING with numbers 'num1' and 'num2')";
-    cout << "\n--extend 'num' 'str' (extend STRING with number 'num' with string 'str')";
+    cout << "\n--find 'num' 'str' (find in STRING with number 'num' STRING 'str' and print index of first char)";
+    cout << "\n--divide 'num' 'index' (divide STRING with number 'num' by index 'index')";
+    cout << "\n--concat 'num1' 'num2' (concatenate STRINGS with numbers 'num1' and 'num2')";
+    cout << "\n--extend 'num1' 'num2' (extend STRING with number 'num1' by string with number 'num2')";
+    cout << "\n--replace 'num' 'old' 'new' (replace STRING with number 'num' substring 'old' to substring 'new')";
     cout << "\n--len 'num' (length of STRING with number 'num')";
     cout << "\n--show 'num' (show STRING with number 'num')";
     cout << "\n--all (show ALL STRINGS)";
     cout << "\n--exit (exit the PROGRAM)\n\n";
 }
 
+void push(vector<String>&strings){
+    int number;
+    char ch;
+    if (scanf("%d %c", &number, &ch) == 2 && number >= 0 && number < strings.size()){
+        strings[number].push(ch);
+        cout << "\nYou pushed char '" << ch << "'";
+        cout << "\nSTRING " << number << ": ";
+        strings[number].print();
+    } else cout << "\nWRONG input or incorrect string number\n";
+}
+
 void insert(vector<String>&strings){
     int number, index;
-    char ch;
-    if (scanf("%d %c %d", &number, &ch, &index) == 3 && number >= 0 && number < strings.size()){
+    string str;
+    if (scanf("%d%d", &number, &index) == 2 && number >= 0 && number < strings.size()){
+        cin >> str;
+        auto s = String(str);
         int prevLen = strings[number].len();
-        strings[number].insert(ch, index);
+        strings[number].insert(index, s);
         int nextLen = strings[number].len();
         if (nextLen - prevLen == 0){
             cout << "\nIncorrect index\n";
             return;
         }
-        cout << "\nYou inserted char " << ch << " to string with number " << number << " to index " << index;
+        cout << "\nYou inserted string: " << str << "\nto string with number " << number << " to index " << index;
         cout << "\nSTRING " << number << ": ";
         strings[number].print();
     } else cout << "\nWRONG input or incorrect string number\n";
 }
 
 void remove(vector<String>&strings){
-    int number, index;
-    if (scanf("%d %d", &number, &index) == 2 && number >= 0 && number < strings.size()){
-        Node *deleted = strings[number].remove(index);
+    int number, start, end;
+    if (scanf("%d%d%d", &number, &start, &end) == 3 && number >= 0 && number < strings.size()){
+        String *deleted = strings[number].remove(start, end);
         if (deleted == nullptr){
-            cout << "\nIncorrect index\n";
+            cout << "\nIncorrect indices\n";
             return;
         }
-        cout << "\nYou removed char " << deleted->data << " with index " << index << " from string with number " << number;
+        cout << "\nYou removed substring: ";
+        deleted->print();
+        cout << "from string with number " << number;
         cout << "\nSTRING " << number << ": ";
         strings[number].print();
         delete deleted;
@@ -258,7 +264,7 @@ void remove(vector<String>&strings){
 
 void get(vector<String>&strings){
     int number, index;
-    if (scanf("%d %d", &number, &index) == 2 && number >= 0 && number < strings.size()){
+    if (scanf("%d%d", &number, &index) == 2 && number >= 0 && number < strings.size()){
         Node *got = strings[number].get(index);
         if (got == nullptr){
             cout << "\nIncorrect index\n";
@@ -271,33 +277,32 @@ void get(vector<String>&strings){
     } else cout << "\nWRONG input or incorrect string number\n";
 }
 
-void empty(vector<String>&strings){
-    int number;
-    if (scanf("%d", &number) == 1 && number >= 0 && number < strings.size()){
-        strings[number].isEmpty() ? cout << "\nYes\n" : cout << "\nNo\n";
-    } else cout << "\nWRONG input or incorrect string number\n";
-}
-
-void contains(vector<String>&strings){
+void find(vector<String>&strings){
     int number;
     string str;
     if (scanf("%d ", &number) == 1 && number >= 0 && number < strings.size()){
         cin >> str;
-        strings[number].contains(str) ? cout << "\nYes\n" : cout << "\nNo\n";
+        auto s = String(str);
+        int index = strings[number].find(s);
+        if (index == -1){
+            cout << "\nNo such substring\n";
+            return;
+        }
+        cout << "\nIndex of first char: " << index;
         cout << "\nSTRING " << number << ": ";
         strings[number].print();
     } else cout << "\nWRONG input or incorrect string number\n";
 }
 
-void slice(vector<String>&strings){
-    int number, start, end;
-    if (scanf("%d %d %d", &number, &start, &end) == 3 && number >= 0 && number < strings.size()){
-        String *slice = strings[number].slice(start, end);
+void divide(vector<String>&strings){
+    int number, index;
+    if (scanf("%d%d", &number, &index) == 2 && number >= 0 && number < strings.size()){
+        String *slice = strings[number].divide(index);
         if (slice == nullptr){
-            cout << "\nIncorrect start and end indices\n";
+            cout << "\nIncorrect index\n";
             return;
         }
-        cout << endl;
+        cout << "\nDivided part: ";
         slice->print();
         cout << "\nSTRING " << number << ": ";
         strings[number].print();
@@ -307,11 +312,11 @@ void slice(vector<String>&strings){
 
 void concat(vector<String>&strings){
     int number1, number2;
-    if (scanf("%d %d", &number1, &number2) == 2 && number1 >= 0 && number1 < strings.size() &&
+    if (scanf("%d%d", &number1, &number2) == 2 && number1 >= 0 && number1 < strings.size() &&
     number2 >= 0 && number2 < strings.size()){
-        String res = strings[number1] + strings[number2];
+        String *res = strings[number1] + strings[number2];
         cout << endl;
-        res.print();
+        res->print();
         cout << "\nSTRING " << number1 << ": ";
         strings[number1].print();
         cout << "\nSTRING " << number2 << ": ";
@@ -320,11 +325,25 @@ void concat(vector<String>&strings){
 }
 
 void extend(vector<String>&strings){
+    int number1, number2;
+    if (scanf("%d%d", &number1, &number2) == 2 && number1 >= 0 && number1 < strings.size() &&
+        number2 >= 0 && number2 < strings.size()){
+        strings[number1] += strings[number2];
+        cout << "\nSTRING " << number1 << ": ";
+        strings[number1].print();
+        cout << "\nSTRING " << number2 << ": ";
+        strings[number2].print();
+    } else cout << "\nWRONG input or incorrect string numbers\n";
+}
+
+void replace(vector<String>&strings){
     int number;
-    string str;
+    string str_old, str_new;
     if (scanf("%d ", &number) == 1 && number >= 0 && number < strings.size()){
-        cin >> str;
-        strings[number] += str;
+        cin >> str_old >> str_new;
+        auto o = String(str_old);
+        auto n = String(str_new);
+        strings[number].replace(o, n);
         cout << "\nSTRING " << number << ": ";
         strings[number].print();
     } else cout << "\nWRONG input or incorrect string number\n";
@@ -357,14 +376,15 @@ void all(vector<String>&strings){
 
 void operate(const string& command, vector<String>&strings){
     if (command == "--help") help();
+    else if (command == "--push") push(strings);
     else if (command == "--insert") insert(strings);
     else if (command == "--remove") remove(strings);
     else if (command == "--get") get(strings);
-    else if (command == "--empty") empty(strings);
-    else if (command == "--contains") contains(strings);
-    else if (command == "--slice") slice(strings);
+    else if (command == "--find") find(strings);
+    else if (command == "--divide") divide(strings);
     else if (command == "--concat") concat(strings);
     else if (command == "--extend") extend(strings);
+    else if (command == "--replace") replace(strings);
     else if (command == "--len") len(strings);
     else if (command == "--show") show(strings);
     else if (command == "--all") all(strings);
