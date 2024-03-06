@@ -49,7 +49,7 @@ public:
     }
 
     void insert(int index, String &str){ // вставить строку по индексу
-        if (index < 0 || index > length || str.head == nullptr) return;
+        if (index < 0 || index > this->length || str.head == nullptr) return;
         if (this->head == nullptr){
             this->head = str.head;
             this->tail = str.tail;
@@ -57,7 +57,7 @@ public:
             str.tail->next = this->head;
             this->head->prev = str.tail;
             this->head = str.head;
-        } else if (index == length){
+        } else if (index == this->length){
             str.head->prev = this->tail;
             this->tail->next = str.head;
             this->tail = str.tail;
@@ -100,11 +100,11 @@ public:
     }
 
     int find(String& s) const{ // поиск подстроки
-        if (s.len() > length || s.len() == 0) return -1;
+        if (s.len() > this->length || s.len() == 0) return -1;
         bool flag;
         Node *start = this->head;
         Node *current, *other;
-        for (int i = 0; i < length - s.len() + 1; ++i) { // helloWorld
+        for (int i = 0; i < this->length - s.len() + 1; ++i) { // helloWorld
             flag = true;
             current = start;
             other = s.head;
