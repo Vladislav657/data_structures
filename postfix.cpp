@@ -34,14 +34,6 @@ public:
         this->head = nullptr;
     }
 
-    bool empty(){
-        return this->head == nullptr;
-    }
-
-    Sign *first(){
-        return this->head;
-    }
-
     void push(Sign *sign){
         sign->next = this->head;
         this->head = sign;
@@ -66,14 +58,6 @@ public:
         this->head = nullptr;
     }
 
-    bool empty(){
-        return this->head == nullptr;
-    }
-
-    Operand *first(){
-        return this->head;
-    }
-
     void push(Operand *operand){
         operand->next = this->head;
         this->head = operand;
@@ -94,7 +78,7 @@ double operate(double a, double b, char op){
         case '*':
             return a * b;
         case '/':
-            return a / b;
+            return b == 0 ? 0 : a / b;
         case '+':
             return a + b;
         case '-':
@@ -105,10 +89,12 @@ double operate(double a, double b, char op){
 }
 
 double calculate(string& exp, map<char, double>& identifiers){
-    double res = 0;
     OperandStack operands = OperandStack();
     for (char i : exp) {
-        if (i >= 'a' && i <= 'z') operands.push(new Operand(identifiers[i]));
+        if (i >= 'a' && i <= 'z'){
+            operands.push(new Operand(identifiers[i]));
+            continue;
+        }
         double b = operands.pop()->data;
         double a = operands.pop()->data;
         operands.push(new Operand(operate(a, b, i)));
@@ -128,8 +114,8 @@ bool isRight(string& exp) {
                 continue;
             }
             if (i == exp.size() - 1) return false;
-            if (exp[i - 1] != '*' && exp[i - 1] != '/' && exp[i - 1] != '+' && exp[i - 1] != '-') return false;
-            if (exp[i + 1] < 'a' || exp[i + 1] > 'z') return false;
+            if (exp[i + 1] == '*' || exp[i + 1] == '/' || exp[i + 1] == '+' || exp[i + 1] == '-') return false;
+            if (exp[i - 1] >= 'a' && exp[i - 1] <= 'z') return false;
             balance++;
         } else if (exp[i] == ')') {
             if (i == 0) return false;
@@ -137,22 +123,16 @@ bool isRight(string& exp) {
                 if (balance > 0) balance--;
                 continue;
             }
-            if (exp[i + 1] != '*' && exp[i + 1] != '/' && exp[i + 1] != '+' && exp[i + 1] != '-') return false;
-            if (exp[i - 1] < 'a' || exp[i - 1] > 'z') return false;
+            if (exp[i - 1] == '*' || exp[i - 1] == '/' || exp[i - 1] == '+' || exp[i - 1] == '-') return false;
+            if (exp[i + 1] >= 'a' && exp[i + 1] <= 'z') return false;
             if (balance > 0) balance--;
         } else if (exp[i] >= 'a' && exp[i] <= 'z') {
             if (index % 2 == 1) return false;
             index++;
         }
     }
-    if (balance != 0) return false;
+    if (balance != 0 || index == 0) return false;
     return true;
-}
-
-string strip(string& exp){
-    string result;
-    for (char i : exp) if (i != ' ') result.push_back(i);
-    return result;
 }
 
 string setParentheses(string& exp){
@@ -188,27 +168,86 @@ string toPostfix(string& right){
             signs.push(new Sign(i));
         }
     }
-    while (!signs.empty()) result.push_back(signs.pop()->data);
     return result;
 }
 
 void help(){
-    cout << "You can enter ARITHMETIC EXPRESSION and get ANSWER, commands:\n";
+    cout << "You can enter ARITHMETIC EXPRESSION and get ANSWER, commands:\n\n";
+    cout << "--help (show ALL COMMANDS)\n";
     cout << "--exp (enter EXPRESSION and then CALCULATE)\n";
-    cout << "--init 'name' 'value' (initialise ONE LETTER IDENTIFIER, example: '--init a 867')\n";
+    cout << "--init 'name' 'value' (initialise ONE LETTER IDENTIFIER: 'a-z', default '0', example: '--init a 867')\n";
     cout << "--show 'name' (show IDENTIFIER with name 'name')\n";
     cout << "--all (show ALL IDENTIFIERS)\n";
     cout << "--exit (exit the PROGRAM)\n\n";
 }
 
+void exp(map<char, double>& identifiers){
+    string expression;
+    cout << "\nENTER ARITHMETIC EXPRESSION (NO space, use ONE LETTER IDENTIFIERS, example: '(a+b)*(c-d)'):\n";
+    cin >> expression;
+    if (!isRight(expression)){
+        cout << "\nWRONG expression\n";
+        return;
+    }
+    expression = setParentheses(expression);
+    string postfix = toPostfix(expression);
+    cout << "\nResult: " << calculate(postfix, identifiers) << endl;
+}
+
+void init(map<char, double>& identifiers){
+    char identifier;
+    double value;
+    cin >> identifier;
+    if (identifier < 'a' || identifier > 'z'){
+        cout << "\nWRONG identifier, use LETTERS: 'a-z'\n";
+        return;
+    }
+    if (scanf("%lf", &value) != 1){
+        cout << "\nWRONG value, use NUMBERS\n";
+        return;
+    }
+    identifiers[identifier] = value;
+    cout << "\nYou initialized identifier '" << identifier << "' with value '" << value << "'\n";
+}
+
+void show(map<char, double>& identifiers){
+    char identifier;
+    cin >> identifier;
+    if (identifier < 'a' || identifier > 'z'){
+        cout << "\nNO such identifier, use LETTERS: 'a-z'\n";
+        return;
+    }
+    cout << "\n" << identifier << " = " << identifiers[identifier] << "\n";
+}
+
+void all(map<char, double>& identifiers){
+    cout << "\n";
+    for (char i = 'a'; i <= 'z'; ++i) {
+        cout << i << " = " << identifiers[i];
+        if (i != 'z') cout << "; ";
+    }
+    cout << "\n";
+}
+
+void doCommand(string& command, map<char, double>& identifiers){
+    if (command == "--help") help();
+    else if (command == "--exp") exp(identifiers);
+    else if (command == "--init") init(identifiers);
+    else if (command == "--show") show(identifiers);
+    else if (command == "--all") all(identifiers);
+    else cout << "\nWRONG COMMAND\n";
+}
+
 int main(){
     map<char, double>identifiers;
-    identifiers['d'] = 90;
-
-    string s;
-//    cin >> s;
-    s = setParentheses(s);
-//    string postfix = toPostfix(s);
-//    cout << s;
+    help();
+    string command;
+    while (true){
+        cin >> command;
+        if (command == "--exit"){
+            cout << "\nThe PROGRAM is exited\n";
+            break;
+        } else doCommand(command, identifiers);
+    }
     return 0;
 }
