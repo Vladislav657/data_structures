@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <map>
-#include <set>
 
 using namespace std;
 
@@ -57,6 +56,7 @@ public:
     }
 
     void print(){
+        cout << '\n';
         for (auto& pair : this->nodes) {
             cout << pair.first << ": ";
             for (int i = 0; i < pair.second.size(); ++i){
@@ -91,7 +91,7 @@ public:
         return result;
     }
 
-    void lowestDistanceToAll(int node){
+    map<int, int> lowestDistanceToAll(int node){
         map<int, int>distances;
         vector<int>visited;
         int s = sumOfDistances();
@@ -101,23 +101,94 @@ public:
         }
         distances[node] = 0;
         deikrtra(visited, distances, node);
-        cout << "from " << node << endl;
-        for (auto& distance : distances) {
-            if (distance.second < s + 1) cout << "to " << distance.first << ": " << distance.second << endl;
-        }
+        return distances;
     }
 };
 
+//------------------------------------------------------------------------------------------------------------
+void help(){
+    cout << "\nThis is the PROGRAM for Graph, POSSIBLE commands:\n";
+    cout << "\n--help (show all COMMANDS)";
+    cout << "\n--add 'flag' 'node1' 'node2' 'weight' (add 'node1' and 'node2' and 'weight' between their"
+            "'flag': '-o' oriented weight, only from 'node1' to 'node2'; '-n' non-oriented weight)";
+    cout << "\n--to_all 'node' (show distance from 'node' to all nodes)";
+    cout << "\n--to_other 'node1' 'node2' (show distance from 'node1' to 'node2')";
+    cout << "\n--show (show Graph)";
+    cout << "\n--exit (exit the PROGRAM)\n\n";
+}
+
+void add(Graph& graph){
+    string flag;
+    int node1, node2, weight;
+    cin >> flag;
+    if (scanf("%d%d%d", &node1, &node2, &weight) != 3) {
+        cout << "\nIncorrect input\n";
+        return;
+    }
+    if (flag == "-o") graph.add(node1, node2, weight);
+    else if (flag == "-n"){
+        graph.add(node1, node2, weight);
+        graph.add(node2, node1, weight);
+    } else cout << "\nIncorrect flag\n";
+}
+
+void toAll(Graph& graph){
+    int node;
+    if (scanf("%d", &node) != 1) {
+        cout << "\nIncorrect input\n";
+        return;
+    }
+    if (!graph.isSource(node)){
+        cout << "\nNode " << node << " is not source for other nodes\n";
+        return;
+    }
+    map<int, int>distances = graph.lowestDistanceToAll(node);
+    cout << endl;
+    int sumOfWeights = graph.sumOfDistances();
+    for (auto& distance : distances) {
+        if (distance.second < sumOfWeights + 1) cout << "to " << distance.first << ": " << distance.second << endl;
+    }
+    cout << endl;
+}
+
+void toOther(Graph& graph){
+    int node1, node2;
+    if (scanf("%d%d", &node1, &node2) != 2) {
+        cout << "\nIncorrect input\n";
+        return;
+    }
+    if (!graph.isSource(node1) or !graph.find(node2)){
+        cout << "\n'node1' is not source or 'node2' is not in graph\n";
+        return;
+    }
+    map<int, int>distances = graph.lowestDistanceToAll(node1);
+    int sumOfWeights = graph.sumOfDistances();
+    if (distances[node2] == sumOfWeights + 1){
+        cout << "\nThere is no path from " << node1 << " to " << node2 << endl;
+        return;
+    }
+    cout << endl << distances[node2] << endl;
+}
+
+void doCommand(string& command, Graph& graph){
+    if (command == "--help") help();
+    else if (command == "--add") add(graph);
+    else if (command == "--to_all") toAll(graph);
+    else if (command == "--to_other") toOther(graph);
+    else if (command == "--show") graph.print();
+}
+//------------------------------------------------------------------------------------------------------------
 
 int main(){
     Graph graph = Graph();
-    graph.add(8, 1, 38);
-    graph.add(8, 2, 29);
-    graph.add(8, 3, 11);
-    graph.add(8, 4, 9);
-    graph.add(2, 1, 57);
-    graph.add(2, 8, 39);
-    graph.print();
-    graph.lowestDistanceToAll(2);
+    help();
+    string command;
+    while (true){
+        cin >> command;
+        if (command == "--exit"){
+            cout << "\nThe PROGRAM is exited\n";
+            break;
+        } else doCommand(command, graph);
+    }
     return 0;
 }
