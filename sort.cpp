@@ -73,6 +73,7 @@ vector<double> includeSort(vector<double> array){
     return sorted;
 }
 
+// sort functions -----------------------------------------------------------------------------------------------------
 vector<double> choiceSort(vector<double> array){
     int inversions = 0;
     vector<double> sorted(array.size());
@@ -136,7 +137,7 @@ vector<double> hoarSort(vector<double> array, int& inversions){
     return sorted;
 }
 
-vector<double> treeSort(vector<double> array){
+vector<double> treeSort(vector<double>& array){
     int inversions = 0;
     BinaryTree bt = BinaryTree();
     vector<double>sorted;
