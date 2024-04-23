@@ -176,6 +176,7 @@ void doCommand(string& command, Graph& graph){
     else if (command == "--to_all") toAll(graph);
     else if (command == "--to_other") toOther(graph);
     else if (command == "--show") graph.print();
+    else cout << "\nWrong command\n";
 }
 //------------------------------------------------------------------------------------------------------------
 
