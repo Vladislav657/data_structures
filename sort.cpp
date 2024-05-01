@@ -83,8 +83,10 @@ vector<double> choiceSort(vector<double> array){
     for (int i = 0; i < sorted.size(); ++i) {
         index = i;
         for (int j = i + 1; j < sorted.size(); ++j) {
-            inversions++;
-            if (sorted[j] < sorted[index]) index = j;
+            if (sorted[j] < sorted[index]) {
+                inversions++;
+                index = j;
+            }
         }
         inversions++;
         change = sorted[i];
