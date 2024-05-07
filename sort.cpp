@@ -150,6 +150,7 @@ int main(){
     int n = 10000;
     vector<double>arr(n);
     for (int i = 0; i < n; ++i) arr[i] = rand();
+
     vector<double>is = includeSort(arr);
     vector<double>cs = choiceSort(arr);
     vector<double>bs = bubbleSort(arr);
