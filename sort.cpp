@@ -27,6 +27,7 @@ public:
         if (this->root == nullptr) this->root = node;
         Node *current = this->root;
         while (true){
+            inversions++;
             if (node->data < current->data){
                 inversions++;
                 if (current->left == nullptr){
@@ -43,11 +44,12 @@ public:
         }
     }
 
-    static void lrr(Node *node, vector<double>& sorted){
+    static void lrr(Node *node, vector<double>& sorted, int& inversions){
+        inversions++;
         if (node == nullptr) return;
-        lrr(node->left, sorted);
+        lrr(node->left, sorted, inversions);
         sorted.push_back(node->data);
-        lrr(node->right, sorted);
+        lrr(node->right, sorted, inversions);
     }
 };
 
@@ -59,8 +61,8 @@ vector<double> includeSort(vector<double> array){
     for (int i = 2; i < sorted.size(); ++i) {
         sorted[0] = sorted[i];
         for (int j = i; j > 0; --j) {
+            inversions++;
             if (sorted[j] < sorted[j - 1]){
-                inversions++;
                 change = sorted[j];
                 sorted[j] = sorted[j - 1];
                 sorted[j - 1] = change;
@@ -73,7 +75,6 @@ vector<double> includeSort(vector<double> array){
     return sorted;
 }
 
-// sort functions -----------------------------------------------------------------------------------------------------
 vector<double> choiceSort(vector<double> array){
     int inversions = 0;
     vector<double> sorted(array.size());
@@ -83,12 +84,9 @@ vector<double> choiceSort(vector<double> array){
     for (int i = 0; i < sorted.size(); ++i) {
         index = i;
         for (int j = i + 1; j < sorted.size(); ++j) {
-            if (sorted[j] < sorted[index]) {
-                inversions++;
-                index = j;
-            }
+            inversions++;
+            if (sorted[j] < sorted[index]) index = j;
         }
-        inversions++;
         change = sorted[i];
         sorted[i] = sorted[index];
         sorted[index] = change;
@@ -104,8 +102,8 @@ vector<double> bubbleSort(vector<double> array){
     double change;
     for (int i = 0; i < sorted.size() - 1; ++i) {
         for (int j = 1; j < sorted.size(); ++j){
+            inversions++;
             if (sorted[j] < sorted[j - 1]){
-                inversions++;
                 change = sorted[j];
                 sorted[j] = sorted[j - 1];
                 sorted[j - 1] = change;
@@ -118,16 +116,15 @@ vector<double> bubbleSort(vector<double> array){
 
 vector<double> hoarSort(vector<double> array, int& inversions){
     vector<double>sorted;
+    inversions++;
     if (array.size() < 2) for (double i : array) sorted.push_back(i);
     else {
         int index = (int) array.size() / 2;
         vector<double> left, right;
         for (int i = 0; i < array.size(); ++i) {
+            inversions++;
             if (i == index) continue;
-            if (array[i] < array[index]) {
-                inversions++;
-                left.push_back(array[i]);
-            }
+            if (array[i] < array[index]) left.push_back(array[i]);
             else right.push_back(array[i]);
         }
         left = hoarSort(left, inversions);
@@ -144,13 +141,15 @@ vector<double> treeSort(vector<double>& array){
     BinaryTree bt = BinaryTree();
     vector<double>sorted;
     for (double i : array) bt.push(new Node(i), inversions);
-    BinaryTree::lrr(bt.root, sorted);
+    BinaryTree::lrr(bt.root, sorted, inversions);
     cout << "Tree sort: " << inversions << endl;
     return sorted;
 }
 
 int main(){
-    vector<double>arr = {4, 9, 1, 7, 4.65, 10, 3, 58, 59, 44, -5, -4.66, 599, 4};
+    int n = 10000;
+    vector<double>arr(n);
+    for (int i = 0; i < n; ++i) arr[i] = rand();
     vector<double>is = includeSort(arr);
     vector<double>cs = choiceSort(arr);
     vector<double>bs = bubbleSort(arr);
